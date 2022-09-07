@@ -1,0 +1,6 @@
+port: ":8000"
+
+ns:
+  ClusterID: "test-cluster"
+  ClientID: "client-123"
+  NatsURL: "0.0.0.0:4222"
