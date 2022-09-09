@@ -27,65 +27,41 @@ func (a *API) Run() error {
 
 	router := gin.Default()
 
-	router.StaticFile("/", "./front/index.html")
-
-	//router.POST("/api/order", a.postOrderHandler)
-	router.GET("/orderf", a.postOrderHandler)
+	router.StaticFile("/home", "./front/index.html")
+	router.POST("/home/", a.OrderHandler)
 	err := router.Run(viper.GetString("port"))
 
 	return err
 }
-func (v *API) postOrderHandler(c *gin.Context) {
-	reader := bufio.NewReader(os.Stdin)
-	var jsonData []byte
+
+func (a *API) OrderHandler(c *gin.Context) {
 	for {
-		jsonD, err := reader.ReadString('\n')
-		if len(jsonD) == 2 {
-			break
+		reader := bufio.NewReader(os.Stdin)
+		var jsonData []byte
+		for {
+			jsonD, err := reader.ReadString('\n')
+			if len(jsonD) == 2 {
+				break
+			}
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			b := []byte(jsonD)
+			jsonData = append(jsonData, b...)
 		}
+		var order Order
+		err := json.Unmarshal(jsonData, &order)
 		if err != nil {
 			log.Println(err)
 			break
 		}
-		b := []byte(jsonD)
-		jsonData = append(jsonData, b...)
+		err2 := a.nats.Publish(order)
+		if err2 != nil {
+			log.Println(err2)
+			break
+		}
+		log.Println("Успешно отправлены данные")
 	}
-	var order Order
-	err := json.Unmarshal(jsonData, &order)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	err2 := v.nats.Publish(order)
-	if err2 != nil {
-		log.Println(err2)
-		return
-	}
-	log.Println("Успешно отправлены данные")
+
 }
-
-/*func (v *API) postOrderHandler(c *gin.Context) {
-	jsonData, err := c.GetRawData()
-	fmt.Print(jsonData)
-	if err != nil {
-		log.Println(err)
-		c.JSON(500, gin.H{"message": "looser"})
-		return
-	}
-
-	var order Order
-	err = json.Unmarshal(jsonData, &order)
-	if err != nil {
-		c.JSON(400, gin.H{"message": "looser"})
-		return
-	}
-
-	err = v.nats.Publish(order)
-	if err != nil {
-		log.Println(err)
-		c.JSON(500, gin.H{})
-		return
-	}
-
-	c.JSON(201, gin.H{})
-}*/

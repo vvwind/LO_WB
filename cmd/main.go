@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
+	"errors"
 	"github.com/spf13/viper"
 	"log"
+	"os"
 )
 
 func main() {
@@ -15,12 +19,15 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
+
 	defer nats.Close()
 
-	api := CreateAPISERVER(nats)
-	err2 := api.Run()
-	if err2 != nil {
-		log.Panicln(err2)
+	for {
+		err := OrderHandler(nats)
+		if err != nil {
+			log.Println(err)
+		}
+
 	}
 
 }
@@ -29,4 +36,37 @@ func initConfig() error {
 	viper.AddConfigPath("configs")
 	viper.SetConfigName("config")
 	return viper.ReadInConfig()
+}
+
+func OrderHandler(v *NATS) error {
+
+	reader := bufio.NewReader(os.Stdin)
+	var jsonData []byte
+	for {
+		jsonD, err := reader.ReadString('\n')
+		if len(jsonD) == 2 {
+
+			break
+		}
+		if err != nil {
+			return err
+		}
+		b := []byte(jsonD)
+		jsonData = append(jsonData, b...)
+	}
+	var order Order
+	err := json.Unmarshal(jsonData, &order)
+	if err != nil {
+		return err
+	}
+	if order.OrderUid == "" {
+		err1 := errors.New("Can't create order with no ID")
+		return err1
+	}
+	err2 := v.Publish(order)
+	if err2 != nil {
+		return err2
+	}
+	log.Println("Data has been send!")
+	return nil
 }
