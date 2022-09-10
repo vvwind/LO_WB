@@ -1,0 +1,12 @@
+port: ":8000"
+filename: "my_cache.json"
+ns:
+  ClusterID: "test-cluster"
+  ClientID: "client-228"
+  NatsURL: "0.0.0.0:4222"
+
+db:
+  host: "localhost"
+  user: "postgres"
+  password: "sa123"
+  dbname: "DB_Orders"
